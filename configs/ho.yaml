@@ -1,0 +1,29 @@
+grid:
+  N: 16
+  L: 4.0
+  hbar: 1.0
+  m: 1.0
+  centered: true
+potential:
+  name: ho
+  params:
+    omega: 1.0
+    m: 1.0
+hamiltonian:
+  penalty_factor: 1000.0
+vqd:
+  k_states: 5
+  optimizer:
+    maxiter: 200
+ansatz:
+  types: [efficient_su2, hva]
+  reps: [1, 2, 3]
+  entanglement: linear
+  hva_truncation_distance: 1
+backend:
+  statevector: true
+  noisy:
+    noise_strengths: [0.0, 0.002, 0.005]
+    shots: [2000]
+    basis_gates: ["u1", "u2", "u3", "h", "rx", "ry", "rz", "cx"]
+seeds: [0, 1, 2]

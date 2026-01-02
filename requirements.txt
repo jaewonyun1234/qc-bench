@@ -1,0 +1,10 @@
+numpy
+scipy
+qiskit
+qiskit-aer
+qiskit-algorithms
+pandas
+pyarrow
+pyyaml
+matplotlib
+pylatexenc
