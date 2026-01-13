@@ -112,7 +112,7 @@ def build_metrics_row(
         noise_strength: Noise strength for noisy runs.
         shots: Shot count for noisy runs.
         seed: Random seed.
-        grid_info: Dict from GridDiscretization.get_grid_info().
+        grid_info: Dict from GridHamiltonian.get_grid_info().
         energies: VQD energies.
         exact_energies: Reference energies from padded Hamiltonian.
         circuit: QuantumCircuit used for the run.

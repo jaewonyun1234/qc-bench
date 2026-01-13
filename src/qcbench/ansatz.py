@@ -52,6 +52,8 @@ def build_hva(
 
         # Potential layer: diagonal terms (mostly Z strings).
         for pauli_string, coeff in potential_op.label_iter():
+            if all(c=="I" for c in pauli_string):
+                continue
             gate_op = SparsePauliOp([pauli_string], coeffs=[coeff.real])
             evo_gate = PauliEvolutionGate(gate_op, time=theta_v)
             circuit.append(evo_gate, range(n_qubits))

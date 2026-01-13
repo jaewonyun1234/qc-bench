@@ -18,7 +18,9 @@ def _build_optimizer(settings: Optional[Dict[str, Any]] = None) -> COBYLA:
     Returns:
         COBYLA optimizer instance.
     """
+    # If caller didn't provide settings (settings is None), create an empty dict.
     settings = settings or {}
+    # Read "maxiter" from settings if present, otherwise fall back to 200 iterations.
     maxiter = settings.get("maxiter", 200)
     return COBYLA(maxiter=maxiter)
 

@@ -12,16 +12,10 @@ import pandas as pd
 import yaml
 from qiskit import transpile
 
+from qcbench.analytics import exactSolutions
 from qcbench.ansatz import build_efficient_su2, build_hva
 from qcbench.backends import make_noisy_primitives, make_statevector_primitives
-from qcbench.discretization import GridDiscretization
-from qcbench.hamiltonian import (
-    build_qubit_hamiltonian,
-    pad_to_qubit_dimension,
-    padding_leakage,
-    to_sparse_pauli_op,
-    truncate_interaction,
-)
+from qcbench.hamiltonian import GridHamiltonian
 from qcbench.metrics import build_metrics_row
 from qcbench.potentials import V_doublewell, V_ho, V_isw
 from qcbench.solvers import run_vqd
@@ -45,14 +39,14 @@ def load_config(path: Path) -> Dict[str, Any]:
     return cfg
 
 
-def _grid_from_config(cfg: Dict[str, Any]) -> GridDiscretization:
-    """Build GridDiscretization from config.
+def _grid_from_config(cfg: Dict[str, Any]) -> GridHamiltonian:
+    """Build GridHamiltonian from config.
 
     Args:
         cfg: Parsed config dict.
 
     Returns:
-        GridDiscretization instance.
+        GridHamiltonian instance.
     """
     grid_cfg = cfg.get("grid", {})
     L = grid_cfg.get("L")
@@ -70,7 +64,7 @@ def _grid_from_config(cfg: Dict[str, Any]) -> GridDiscretization:
         x_min = grid_cfg.get("x_min", 0.0)
         x_max = grid_cfg.get("x_max", None)
 
-    return GridDiscretization(L=L, N=N, hbar=hbar, m=m, x_min=x_min, x_max=x_max)
+    return GridHamiltonian(L=L, N=N, hbar=hbar, m=m, x_min=x_min, x_max=x_max)
 
 
 def _potential_fn(cfg: Dict[str, Any]):
@@ -96,30 +90,6 @@ def _potential_fn(cfg: Dict[str, Any]):
     raise ValueError(f"Unknown potential name: {name}")
 
 
-def _analytic_energies(cfg: Dict[str, Any], grid: GridDiscretization, k_states: int) -> List[float] | None:
-    """Compute analytic energies where closed-form solutions exist.
-
-    Args:
-        cfg: Parsed config dict.
-        grid: GridDiscretization instance.
-        k_states: Number of energy levels to return.
-
-    Returns:
-        List of analytic energies for ISW/HO, or None for other potentials.
-    """
-    pot_cfg = cfg.get("potential", {})
-    name = pot_cfg.get("name")
-    params = pot_cfg.get("params", {})
-
-    if name == "isw":
-        return [grid.analytical_infinite_well(n=i + 1)[0] for i in range(k_states)]
-    if name == "ho":
-        omega = params.get("omega")
-        if omega is None:
-            return None
-        return [grid.analytical_harmonic_oscillator(n=i, omega=omega) for i in range(k_states)]
-
-    return None
 
 
 def _ansatz_configs(cfg: Dict[str, Any]) -> Tuple[List[str], List[int], str, int]:
@@ -160,6 +130,20 @@ def _load_existing(path: Path) -> pd.DataFrame:
         return pd.DataFrame()
 
 
+def _format_matrix(matrix: np.ndarray, precision: int = 4) -> str:
+    """Return a nicely formatted matrix string for CLI output."""
+    df = pd.DataFrame(matrix)
+    with pd.option_context(
+        "display.precision",
+        precision,
+        "display.max_columns",
+        None,
+        "display.width",
+        160,
+    ):
+        return df.to_string()
+
+
 def run_config(config_path: Path, output_path: Path, append: bool = True) -> pd.DataFrame:
     """Run a single config and write results.
 
@@ -174,10 +158,11 @@ def run_config(config_path: Path, output_path: Path, append: bool = True) -> pd.
     cfg = load_config(config_path)
     grid = _grid_from_config(cfg)
     pot_fn = _potential_fn(cfg)
+    solutions = exactSolutions(grid)
 
     # Build physical Hamiltonian and its padded qubit representation.
     H_phys = grid.build_hamiltonian(pot_fn)
-    qubit_op, exact_evals, n_qubits, padded = build_qubit_hamiltonian(
+    qubit_op, exact_evals, n_qubits, padded = grid.build_qubit_hamiltonian(
         H_phys, penalty_factor=cfg.get("hamiltonian", {}).get("penalty_factor", 1e3)
     )
 
@@ -185,8 +170,8 @@ def run_config(config_path: Path, output_path: Path, append: bool = True) -> pd.
     exact_energies = [float(e) for e in exact_evals[:k_states]]
     grid_evals = np.linalg.eigvalsh(H_phys).real
     grid_energies = [float(e) for e in grid_evals[:k_states]]
-    analytic_energies = _analytic_energies(cfg, grid, k_states)
-    leak = padding_leakage(padded, n_phys=H_phys.shape[0], k=k_states)
+    analytic_energies = solutions.analytic_energies(cfg, k_states)
+    leak = exactSolutions.padding_leakage(padded, n_phys=H_phys.shape[0], k=k_states)
 
     ansatz_types, reps_list, entanglement, trunc_dist = _ansatz_configs(cfg)
     backend_cfg = _backend_configs(cfg)
@@ -195,11 +180,17 @@ def run_config(config_path: Path, output_path: Path, append: bool = True) -> pd.
     # Precompute kinetic/potential operators for HVA.
     kinetic = grid.build_kinetic_energy()
     potential = grid.build_potential_energy(pot_fn)
-    kinetic_trunc = truncate_interaction(kinetic, distance=trunc_dist)
-    kinetic_padded, _ = pad_to_qubit_dimension(kinetic_trunc, penalty_factor=0.0)
-    potential_padded, _ = pad_to_qubit_dimension(potential, penalty_factor=0.0)
-    kinetic_op = to_sparse_pauli_op(kinetic_padded)
-    potential_op = to_sparse_pauli_op(potential_padded)
+    kinetic_trunc = grid.truncate_interaction(kinetic, distance=trunc_dist)
+    kinetic_padded, _ = grid.pad_to_qubit_dimension(kinetic_trunc, penalty_factor=0.0)
+    potential_padded, _ = grid.pad_to_qubit_dimension(potential, penalty_factor=0.0)
+    kinetic_op = grid.to_pauli_op(kinetic_padded)
+    potential_op = grid.to_pauli_op(potential_padded)
+
+    if cfg.get("debug", {}).get("print_padded_matrices", False):
+        print("\nKinetic padded matrix:")
+        print(_format_matrix(kinetic_padded))
+        print("\nPotential padded matrix:")
+        print(_format_matrix(potential_padded))
 
     rows: List[Dict[str, Any]] = []
 

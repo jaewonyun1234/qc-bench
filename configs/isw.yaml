@@ -25,3 +25,5 @@ backend:
     shots: [2000]
     basis_gates: ["u1", "u2", "u3", "h", "rx", "ry", "rz", "cx"]
 seeds: [0, 1, 2]
+debug:
+  print_padded_matrices: true
