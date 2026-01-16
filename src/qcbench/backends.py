@@ -103,43 +103,9 @@ def make_noisy_primitives(
     return estimator, sampler, backend
 
 
-def make_statevector_estimator(seed: Optional[int] = None) -> BackendEstimatorV2:
-    """Return only the estimator for statevector simulation.
-
-    Args:
-        seed: Optional simulator seed.
-
-    Returns:
-        BackendEstimatorV2 instance.
-    """
-    estimator, _, _ = make_statevector_primitives(seed=seed)
-    return estimator
-
-
-def make_noisy_estimator(
-    shots: int,
-    noise_strength: float,
-    seed: Optional[int] = None,
-    basis_gates: Optional[list[str]] = None,
-) -> BackendEstimatorV2:
-    """Return only the estimator for noisy simulation.
-
-    Args:
-        shots: Number of shots for sampling.
-        noise_strength: Depolarizing error probability.
-        seed: Optional simulator seed.
-        basis_gates: Optional gate list for noise attachment.
-
-    Returns:
-        BackendEstimatorV2 instance.
-    """
-    estimator, _, _ = make_noisy_primitives(shots, noise_strength, seed=seed, basis_gates=basis_gates)
-    return estimator
 
 
 __all__ = [
     "make_statevector_primitives",
-    "make_noisy_primitives",
-    "make_statevector_estimator",
-    "make_noisy_estimator",
+    "make_noisy_primitives"
 ]

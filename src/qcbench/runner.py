@@ -167,7 +167,9 @@ def run_config(config_path: Path, output_path: Path, append: bool = True) -> pd.
     )
 
     k_states = int(cfg.get("vqd", {}).get("k_states", 5))
+    # eigenvalues from the padded
     exact_energies = [float(e) for e in exact_evals[:k_states]]
+    # eigenvalues from N*N physical Hamiltonian
     grid_evals = np.linalg.eigvalsh(H_phys).real
     grid_energies = [float(e) for e in grid_evals[:k_states]]
     analytic_energies = solutions.analytic_energies(cfg, k_states)
