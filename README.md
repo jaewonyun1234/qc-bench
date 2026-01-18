@@ -5,18 +5,15 @@ Benchmark lab for 1D potentials (ISW / HO / Double well) comparing ansatzes and 
 ## Quickstart
 
 ```bash
+python -m venv qc-bench-venv
 source qc-bench-venv/bin/activate
-pip install -r requirements.txt
 pip install -e .
+qc-bench --help
+qc-bench configs/isw.yaml
 ```
 
-Run a config (writes/updates `results/runs.parquet`):
-
-```bash
-python -m qcbench.runner configs/isw.yaml
-```
-
-Then open `notebooks/01_figures.ipynb` to plot from the results table.
+This writes/updates `results/runs.parquet`. Then open
+`notebooks/01_figures.ipynb` to plot from the results table.
 
 
 ## Hamiltonian Variational Ansatz (HVA) in this project
