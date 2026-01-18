@@ -156,28 +156,6 @@ class GridHamiltonian:
         return padded, n_qubits
 
     @staticmethod
-    def truncate_interaction(matrix: np.ndarray, distance: int = 1) -> np.ndarray:
-        """Zero out entries beyond a given interaction distance.
-
-        Args:
-            matrix: Dense matrix to truncate.
-            distance: Maximum allowed |i-j| for nonzero entries.
-
-        Returns:
-            A copy of the matrix with elements beyond the band set to 0.
-
-        Note: for the finite-difference kinetic matrix used here, distance=1 is
-        already the natural bandwidth, so this is effectively a no-op unless you
-        set distance < 1 or use a wider-band discretization in the future.
-        """
-        trunc_matrix = matrix.copy()
-        for i in range(matrix.shape[0]):
-            for j in range(matrix.shape[1]):
-                if abs(i - j) > distance:
-                    trunc_matrix[i, j] = 0.0
-        return trunc_matrix
-
-    @staticmethod
     def to_pauli_op(padded_matrix: np.ndarray, atol: float = 1e-10) -> SparsePauliOp:
         """Convert dense Hermitian matrix to SparsePauliOp.
 

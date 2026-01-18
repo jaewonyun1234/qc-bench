@@ -19,7 +19,6 @@ ansatz:
   types: [efficient_su2, hva]
   reps: [1, 2, 3]
   entanglement: linear
-  hva_truncation_distance: 1
 backend:
   statevector: true
   noisy:

@@ -92,18 +92,17 @@ def _potential_fn(cfg: Dict[str, Any]):
 
 
 
-def _ansatz_configs(cfg: Dict[str, Any]) -> Tuple[List[str], List[int], str, int]:
+def _ansatz_configs(cfg: Dict[str, Any]) -> Tuple[List[str], List[int], str]:
     """Extract ansatz-related settings from config.
 
     Returns:
-        Tuple of (types, reps_list, entanglement, truncation_distance).
+        Tuple of (types, reps_list, entanglement).
     """
     ans_cfg = cfg.get("ansatz", {})
     types = ans_cfg.get("types", ["efficient_su2", "hva"])
     reps_list = ans_cfg.get("reps", [1])
     entanglement = ans_cfg.get("entanglement", "linear")
-    trunc_dist = ans_cfg.get("hva_truncation_distance", 1)
-    return types, reps_list, entanglement, trunc_dist
+    return types, reps_list, entanglement
 
 
 def _backend_configs(cfg: Dict[str, Any]) -> Dict[str, Any]:
@@ -175,15 +174,14 @@ def run_config(config_path: Path, output_path: Path, append: bool = True) -> pd.
     analytic_energies = solutions.analytic_energies(cfg, k_states)
     leak = exactSolutions.padding_leakage(padded, n_phys=H_phys.shape[0], k=k_states)
 
-    ansatz_types, reps_list, entanglement, trunc_dist = _ansatz_configs(cfg)
+    ansatz_types, reps_list, entanglement = _ansatz_configs(cfg)
     backend_cfg = _backend_configs(cfg)
     seeds = cfg.get("seeds", [0])
 
     # Precompute kinetic/potential operators for HVA.
     kinetic = grid.build_kinetic_energy()
     potential = grid.build_potential_energy(pot_fn)
-    kinetic_trunc = grid.truncate_interaction(kinetic, distance=trunc_dist)
-    kinetic_padded, _ = grid.pad_to_qubit_dimension(kinetic_trunc, penalty_factor=0.0)
+    kinetic_padded, _ = grid.pad_to_qubit_dimension(kinetic, penalty_factor=0.0)
     potential_padded, _ = grid.pad_to_qubit_dimension(potential, penalty_factor=0.0)
     kinetic_op = grid.to_pauli_op(kinetic_padded)
     potential_op = grid.to_pauli_op(potential_padded)
