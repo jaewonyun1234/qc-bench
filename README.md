@@ -15,6 +15,9 @@ qc-bench configs/isw.yaml
 If `qc-bench` is not on your PATH, use `python -m qcbench --help` and
 `python -m qcbench configs/isw.yaml` instead.
 
+By default, results append to `results/runs.parquet`. Use `--no-append` to
+overwrite the file (e.g., `qc-bench configs/isw.yaml --no-append`).
+
 This writes/updates `results/runs.parquet`. Then open
 `notebooks/01_figures.ipynb` to plot from the results table.
 
