@@ -1,6 +1,6 @@
 # qc-bench
 
-Benchmark lab for 1D potentials (ISW / HO / Double well) comparing ansatzes and noise impacts.
+Benchmark lab for 1D quantum systems on a grid (Infinite Square Well / Harmonic Oscillator / Double Well), comparing VQE/VQD ansatzes and the impact of shots + noise.
 
 ## Quickstart
 
@@ -12,64 +12,195 @@ qc-bench --help
 qc-bench configs/isw.yaml
 ```
 
-If `qc-bench` is not on your PATH, use `python -m qcbench --help` and
-`python -m qcbench configs/isw.yaml` instead.
+If `qc-bench` is not on your PATH, use:
 
-By default, results append to `results/runs.parquet`. Use `--no-append` to
-overwrite the file (e.g., `qc-bench configs/isw.yaml --no-append`).
+```bash
+python -m qcbench.runner --help
+python -m qcbench.runner configs/isw.yaml
+```
 
-This writes/updates `results/runs.parquet`. Then open
-`notebooks/01_figures.ipynb` to plot from the results table.
+By default, results append to `results/runs.parquet`. Use `--no-append` to overwrite:
 
+```bash
+qc-bench configs/isw.yaml --no-append
+```
+
+Then open `notebooks/01_figures.ipynb` to plot from the results table.
+
+---
+
+## Results table: `results/runs.parquet`
+
+Each run appends **one row** to `results/runs.parquet` with run settings, grid info, circuit cost, energies, and error metrics.
+
+### Column reference (full schema)
+
+#### A) Run identifiers / settings
+
+* `potential`: string. Potential name (e.g., `isw`, `ho`, `doublewell`).
+* `ansatz`: string. Ansatz family (e.g., `efficient_su2`, `hva`).
+* `reps`: int. Ansatz repetition count / depth parameter.
+* `entanglement`: string. Entanglement pattern (passed through to ansatz builder).
+* `backend`: string. `"statevector"` or `"noisy"`.
+* `noise_strength`: float or NaN. Noise parameter used for `"noisy"` runs.
+* `shots`: int or NaN. Shot count used for `"noisy"` runs.
+* `seed`: int. Random seed for reproducibility.
+* `k_states`: int. Number of eigenstates requested (produces energy columns `0..k_states-1`).
+
+#### B) Grid / physical constants (from the discretized Hamiltonian)
+
+* `L`: float. Domain length.
+* `N`: int. Number of grid points (physical Hilbert dimension).
+* `dx`: float. Grid spacing.
+* `n_qubits`: int. Number of qubits used (so that $2^{n_qubits} \ge N$).
+* `hilbert_dim`: int. Embedded qubit dimension ($2^{n_qubits}$).
+* `x_min`, `x_max`: float. Min/max coordinates of the grid.
+* `hbar`: float. $\hbar$ used in the kinetic term.
+* `m`: float. Mass $m$ used in the kinetic term.
+
+#### C) Circuit / operator cost
+
+* `depth`: int. Circuit depth after construction (and transpilation if applicable in your workflow).
+* `two_qubit_count`: int. Count of two-qubit gates (CX/CZ/SWAP/iSWAP/ECR/RXX/RYY/RZZ).
+* `num_parameters`: int. Number of trainable circuit parameters.
+* `num_pauli_terms`: int. Number of Pauli terms in the qubit Hamiltonian operator.
+
+#### D) Optimization / runtime metadata
+
+* `runtime_sec`: float. Wall-clock runtime for the VQD call.
+* `eval_count`: int or NaN. Optimizer evaluation count (if available from metadata).
+* `success`: bool. Whether the optimizer reports success.
+
+#### E) Energies (per-state columns)
+
+For `i = 0..k_states-1` (ground state is `i=0`):
+
+* `E{i}`: **VQD estimated energy** for state `i`. (This is what you are benchmarking.)
+* `E_exact{i}`: **Exact eigenvalue of the padded qubit Hamiltonian** (diagonalization of the final $2^{n}\times 2^{n}$ matrix).
+* `E_err{i}`: **VQD error vs padded reference**, defined as `abs(E{i} - E_exact{i})`.
+
+Also always included (grid diagonalization):
+
+* `E_grid{i}`: **Grid energy** from diagonalizing the physical $N\times N$ Hamiltonian before padding.
+* `E_pad_err{i}`: **Padding mismatch**, defined as `abs(E_exact{i} - E_grid{i})`.
+
+Analytic (only when a closed-form exists and required params exist; e.g., ISW, HO with `omega`):
+
+* `E_analytic{i}`: Analytic (continuous-space) textbook energy level.
+* `E_analytic_err{i}`: Discretization error, defined as `abs(E_grid{i} - E_analytic{i})` (or `abs(E_exact{i} - E_analytic{i})` if grid energies were absent—which they are not in current runs).
+
+#### F) Gap error (energy spacing diagnostic)
+
+For `i = 0..k_states-2`:
+
+* `gap_err_{i}`: error in the energy gap between states `i` and `i+1`:
+  $$
+  \left| (E_{i+1}-E_i) - (E^\text{exact}_{i+1}-E^\text{exact}_i) \right|.
+  $$
+
+#### G) Padding leakage diagnostics (how “physical” the padded eigenvectors are)
+
+* `padding_leakage_max`: max leakage across the lowest `k_states` padded eigenvectors.
+* `padding_leakage_mean`: mean leakage across the lowest `k_states` padded eigenvectors.
+
+(Leakage = probability weight outside the original physical $N$-dimensional subspace when analyzing padded eigenvectors.)
+
+---
+
+## QC-Bench Metrics Reference (energies & errors)
+
+QC-Bench tracks errors across three layers: **continuous physics**, **grid discretization**, and **quantum execution**.
+
+### 1) `E_analytic{i}` — Theoretical (continuous) energy
+
+* **Definition:** Closed-form energy in continuous space (no discretization).
+* **Why it matters:** Physics “ground truth” (when it exists).
+* **Example (HO):** $E_n = \hbar\omega(n+\tfrac{1}{2})$, so `E_analytic0` is $\tfrac{1}{2}\hbar\omega$.
+
+### 2) `E_grid{i}` — Discretized grid energy
+
+* **Definition:** Eigenvalue of the **physical** $N\times N$ grid Hamiltonian.
+* **Why it matters:** Best possible answer your **grid model** can produce (even with a perfect quantum solver).
+
+### 3) `E_exact{i}` — Padded qubit target energy
+
+* **Definition:** Eigenvalue of the final **padded** $2^{n}\times 2^{n}$ Hamiltonian used for qubits.
+* **Why it matters:** The **actual mathematical target** that VQD is trying to match.
+
+### 4) `E_pad_err{i}` — Padding error
+
+* **Definition:** `abs(E_exact{i} - E_grid{i})`
+* **Why it matters:** Detects whether padding/penalties are cleanly preserving the low-energy physical spectrum.
+
+### 5) `E_analytic_err{i}` — Discretization error
+
+* **Definition:** `abs(E_grid{i} - E_analytic{i})` (when analytic energies exist)
+* **Why it matters:** Tells you whether your grid resolution (`dx`, `N`, domain size) is sufficient.
+
+### 6) `E{i}` and `E_err{i}` — Quantum algorithm output and error
+
+* **`E{i}` definition:** The VQD-estimated energy for state `i`.
+* **`E_err{i}` definition:** `abs(E{i} - E_exact{i})`
+* **Why it matters:** Captures optimization limits + sampling + noise + ansatz expressibility.
+
+### 7) `gap_err_{i}` — Energy gap error
+
+* **Definition:**
+  $$
+  \left| (E_{i+1}-E_i) - (E^\text{exact}_{i+1}-E^\text{exact}_i) \right|
+  $$
+* **Why it matters:** Excitation gaps are often more physically relevant than absolute energies.
+
+---
 
 ## Hamiltonian Variational Ansatz (HVA) in this project
 
-This benchmark compares two VQE ansatz families:
+This benchmark compares two VQE/VQD ansatz families:
 
-* **efficient_su2 (hardware-efficient ansatz)**: generic layers of single-qubit rotations + entanglers.
-* **HVA (Hamiltonian Variational Ansatz)**: physics-informed layers built from the Hamiltonian’s structure.
+* **`efficient_su2` (hardware-efficient):** generic layers of single-qubit rotations + entanglers.
+* **`hva` (Hamiltonian Variational Ansatz):** physics-informed layers built from the Hamiltonian’s structure.
 
-The goal is practical and measurable:
+Goal:
 
-> For simple 1D quantum systems (Infinite Square Well / Harmonic Oscillator / Double Well), which ansatz gives the best first 5 energies (E0–E4) for the least circuit cost, and how do shots + noise degrade performance?
+> For simple 1D quantum systems (ISW / HO / Double Well), which ansatz gives the best first `k_states` energies for the least circuit cost, and how do shots + noise degrade performance?
 
 ---
 
 ## VQE reminder (what we optimize)
 
-VQE searches for parameters (\theta) that minimize the energy expectation value:
-[
+VQE/VQD searches for parameters $\theta$ that minimize the energy expectation value:
+$$
 E(\theta) = \langle \psi(\theta)|H|\psi(\theta)\rangle,
 \quad
 |\psi(\theta)\rangle = U(\theta)|\psi_0\rangle.
-]
+$$
 
-Important: the state does **not** “naturally relax” to the ground state just because gates look like time evolution. Ground-state behavior comes from the **variational minimization** (the optimizer), not from physical cooling.
+Important: the state does **not** “naturally relax” to the ground state just because gates look like time evolution. Ground-state behavior comes from **variational minimization** (the optimizer), not physical cooling.
 
 ---
 
 ## What HVA is (one sentence)
 
-**HVA is a VQE ansatz where the circuit is made from exponentials of Hamiltonian components**, typically alternating between “potential-like” and “kinetic-like” pieces.
+**HVA is a variational ansatz built from exponentials of Hamiltonian components**, typically alternating “potential-like” and “kinetic-like” pieces.
 
 ---
 
 ## HVA design used here
 
-For our 1D problems, after finite-difference discretization the Hamiltonian naturally splits into:
-[
+After finite-difference discretization, the Hamiltonian splits naturally as:
+$$
 H = T + V
-]
+$$
 
-* (T): kinetic energy (finite-difference approximation to (-\frac{\hbar^2}{2m}\frac{d^2}{dx^2}))
-* (V): potential energy (diagonal in the position/grid basis)
+* $T$: kinetic energy (finite-difference approximation to $-\frac{\hbar^2}{2m}\frac{d^2}{dx^2}$)
+* $V$: potential energy (diagonal in the position/grid basis)
 
-We use the standard plain-HVA layer structure:
-[
-U(\theta) = \prod_{\ell=1}^{p} \Big(e^{-i\alpha_\ell V}; e^{-i\beta_\ell T}\Big).
-]
+Plain HVA layer structure:
+$$
+U(\theta) = \prod_{\ell=1}^{p}\Big(e^{-i\alpha_\ell V}, e^{-i\beta_\ell T}\Big).
+$$
 
-Each layer has only **two parameters** ((\alpha_\ell,\beta_\ell)), repeated for `reps = p` layers.
+Each layer has **two parameters** $(\alpha_\ell,\beta_\ell)$, repeated for `reps = p` layers.
 
 ---
 
@@ -77,62 +208,48 @@ Each layer has only **two parameters** ((\alpha_\ell,\beta_\ell)), repeated for 
 
 ### 1) Parameter efficiency
 
-Plain HVA uses **2 parameters per layer**, independent of qubit count.
-By contrast, hardware-efficient circuits often use many parameters per qubit per layer.
+Plain HVA uses **2 parameters per layer**, independent of qubit count. Hardware-efficient circuits often scale parameters with qubit count.
 
-Fewer parameters can mean:
+### 2) Physics-guided search directions
 
-* smaller search space,
-* more stable optimization across seeds,
-* good performance at low depth (problem-dependent, not guaranteed).
+A small perturbation generated by $H_k$ gives:
+$$
+e^{-i\epsilon H_k}|\psi\rangle \approx |\psi\rangle - i\epsilon H_k|\psi\rangle,
+$$
+so locally the ansatz explores directions like $-iH_k|\psi\rangle$. In HVA, the generators are physically meaningful operators ($T$, $V$), keeping the search structured.
 
-### 2) Physics-guided “search directions”
+### 3) Energy can change under HVA layers
 
-A small perturbation of a gate generated by (H_k) is:
-[
-e^{-i\epsilon H_k}|\psi\rangle \approx |\psi\rangle - i\epsilon,H_k|\psi\rangle.
-]
-So locally, the ansatz can move in directions spanned by:
-[
-{-iH_1|\psi\rangle,; -iH_2|\psi\rangle,;\dots}.
-]
-HVA chooses (H_k) from physically meaningful operators (like (T) and (V)), so the variational search stays within a structured family of states tied to the problem’s physics, rather than arbitrary rotations.
-
-### 3) Energy can actually change under HVA layers
-
-Even though each factor looks like “time evolution,” the variational energy is not conserved unless you evolve under (H) itself. If you apply a unitary generated by (H_k) and measure the energy of the full (H), then:
-[
-E(\theta)=\langle \psi|e^{i\theta H_k}He^{-i\theta H_k}|\psi\rangle
-]
+Even though each factor looks like “time evolution,” energy is not conserved unless evolving under $H$ itself. If you apply a unitary generated by $H_k$ and measure energy of the full $H$:
+$$
+E(\theta)=\langle \psi|e^{i\theta H_k}He^{-i\theta H_k}|\psi\rangle,
+$$
 and
-[
+$$
 \frac{dE}{d\theta}\Big|_{\theta=0} = i\langle \psi|[H_k,H]|\psi\rangle.
-]
-So if ([H_k,H]\neq 0), tuning (\theta) can move the energy up or down—this is what makes the variational search meaningful.
+$$
+If $[H_k,H]\neq 0$, tuning $\theta$ can move energy up or down — enabling variational optimization.
 
 ---
 
 ## Symmetry note: parity for symmetric 1D potentials
 
-For many 1D potentials we benchmark (HO, symmetric double well, centered ISW), the potential satisfies:
-[
-V(x)=V(-x).
-]
-This implies **parity** (P) is a symmetry of the Hamiltonian:
-[
+For symmetric potentials (HO, symmetric double well, centered ISW), $V(x)=V(-x)$, so parity $P$ is a symmetry:
+$$
 [H,P]=0.
-]
-Therefore energy eigenstates can be chosen to have definite parity (even or odd). In symmetric 1D systems, low-lying eigenstates typically alternate parity:
+$$
+Eigenstates can be chosen with definite parity, and low-lying states typically alternate parity:
+$E_0$ even, $E_1$ odd, $E_2$ even, ...
 
-* (E_0) even, (E_1) odd, (E_2) even, …
-
-If an ansatz (and initialization) is restricted to a single symmetry sector, it cannot represent eigenstates in the other sector. Since this benchmark targets (E_0)–(E_4), we avoid baking in a single-parity restriction by default unless explicitly running “sector” experiments.
+If an ansatz/initialization is restricted to one symmetry sector, it cannot represent states in the other. By default, this benchmark avoids enforcing a single-parity restriction unless explicitly running sector experiments.
 
 ---
 
-## Summary
+## Notes on GitHub math rendering
 
-* **HVA** builds (U(\theta)) from exponentials of Hamiltonian pieces (here: alternating (V) and (T)).
-* **Efficiency** comes from fewer parameters and a physics-guided search family.
-* Symmetries like **parity** can structure the search (useful conceptually and sometimes practically), especially for symmetric 1D potentials.
-* The benchmark evaluates accuracy (E0–E4), circuit cost, and robustness under shots + noise in a reproducible way.
+GitHub renders LaTeX in Markdown when written as:
+
+* inline math: `$...$`
+* block math: `$$...$$`
+
+Delimiters like `[...]` or raw `(\theta)` will show up as plain text, so this README uses `$` / `$$` throughout.
