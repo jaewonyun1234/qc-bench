@@ -1,6 +1,3 @@
-
-
-```markdown
 # qc-bench
 
 Benchmark lab for 1D quantum systems on a grid (Infinite Square Well / Harmonic Oscillator / Double Well), comparing VQE/VQD ansatzes and the impact of shots + noise.
