@@ -18,11 +18,9 @@ Goal:
 ## VQE reminder (what we optimize)
 
 VQE/VQD searches for parameters $\theta$ that minimize the energy expectation value:
-$$
-E(\theta) = \langle \psi(\theta)|H|\psi(\theta)\rangle,
-\quad
-|\psi(\theta)\rangle = U(\theta)|\psi_0\rangle.
-$$
+E(θ) = ⟨ψ(θ) | H | ψ(θ)⟩,  
+where |ψ(θ)⟩ = U(θ) |ψ₀⟩.
+
 
 Important: the state does **not** “naturally relax” to the ground state just because gates look like time evolution. Ground-state behavior comes from **variational minimization** (the optimizer), not physical cooling.
 
