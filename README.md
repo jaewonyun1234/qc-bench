@@ -263,7 +263,3 @@ QC-Bench tracks errors across three layers: **continuous physics**, **grid discr
 * **Definition:**
 
 * **Why it matters:** Excitation gaps are often more physically relevant than absolute energies.
-
-```
-
-```
