@@ -42,9 +42,13 @@ H = T + V
 
 Plain HVA layer structure:
 
-U(θ) =
-  ∏ over ℓ = 1 to p of
-    [ e^(−i α_ℓ V) · e^(−i β_ℓ T) ]
+The unitary operator for the HVA ansatz with $p$ layers is defined as:
+
+$$
+U(\theta) = \prod_{\ell=1}^{p} \left[ e^{-i \alpha_\ell V} \cdot e^{-i \beta_\ell T} \right]
+$$
+
+where $V$ is the potential energy operator and $T$ is the kinetic energy operator.
 
 
 where each layer consists of:
