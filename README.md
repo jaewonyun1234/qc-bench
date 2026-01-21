@@ -41,7 +41,12 @@ H = T + V
 * $V$: potential energy (diagonal in the position/grid basis)
 
 Plain HVA layer structure:
-U(θ) = ∏_{ℓ=1}^p ( e^{-i α_ℓ V} · e^{-i β_ℓ T} )
+U(θ) = ∏_{ℓ=1}^p [ e^{-i α_ℓ V} · e^{-i β_ℓ T} ]
+
+where each layer consists of:
+- a potential evolution e^{-i α_ℓ V}
+- followed by a kinetic evolution e^{-i β_ℓ T}
+
 
 Each layer has **two parameters** $(\alpha_\ell,\beta_\ell)$, repeated for `reps = p` layers.
 
