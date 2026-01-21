@@ -35,9 +35,7 @@ Important: the state does **not** “naturally relax” to the ground state just
 ## HVA design used here
 
 After finite-difference discretization, the Hamiltonian splits naturally as:
-$$
 H = T + V
-$$
 
 * $T$: kinetic energy (finite-difference approximation to $-\frac{\hbar^2}{2m}\frac{d^2}{dx^2}$)
 * $V$: potential energy (diagonal in the position/grid basis)
