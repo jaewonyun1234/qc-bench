@@ -165,11 +165,11 @@ QC-Bench tracks errors across three layers: **continuous physics**, **grid discr
 
 ### 7) `gap_err_{i}` — Energy gap error
 
-* **Definition:**
+**Definition:**
 $$
-\texttt{gap_err}_i
-==================
+\texttt{gap\_err}_i
+=
+\left|\,(E_{i+1}-E_i) - \left(E^{\text{exact}}_{i+1}-E^{\text{exact}}_{i}\right)\right|.
+$$
 
-\left|,(E_{i+1}-E_i) - \left(E^{\text{exact}}*{i+1}-E^{\text{exact}}*{i}\right)\right|.
-$$
 * **Why it matters:** Excitation gaps are often more physically relevant than absolute energies.
