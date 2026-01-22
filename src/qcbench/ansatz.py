@@ -30,13 +30,13 @@ def build_hva(
     potential_op: SparsePauliOp,
     reps: int = 1,
 ) -> QuantumCircuit:
-    """Build a truncated Hamiltonian variational ansatz (HVA).
+    """Build a Hamiltonian variational ansatz (HVA).
 
     Structure: [Potential Layer] -> [Kinetic Layer] repeated.
 
     Args:
         n_qubits: Number of qubits.
-        kinetic_op: Truncated kinetic operator (SparsePauliOp).
+        kinetic_op: Kinetic operator (SparsePauliOp).
         potential_op: Potential operator (SparsePauliOp).
         reps: Number of layers (repetitions).
 
@@ -58,7 +58,7 @@ def build_hva(
             evo_gate = PauliEvolutionGate(gate_op, time=theta_v)
             circuit.append(evo_gate, range(n_qubits))
 
-        # Kinetic layer: truncated off-diagonal terms.
+        # Kinetic layer: Evolution of kinetic terms (skipping global phase).
         for pauli_string, coeff in kinetic_op.label_iter():
             if all(c == "I" for c in pauli_string):
                 continue

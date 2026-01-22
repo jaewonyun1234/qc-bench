@@ -92,14 +92,14 @@ Each run appends **one row** to `results/runs.parquet` with run settings, grid i
 For `i = 0..k_states-1` (ground state is `i=0`):
 
 * `E{i}`: **VQD estimated energy** for state `i`. (This is what you are benchmarking.)
-* `E_exact[i]`: Energies from exact diagonalization of the **padded qubit Hamiltonian**, which is a
+* `E_exact{i}`: Energies from exact diagonalization of the **padded qubit Hamiltonian**, which is a
   $$2^{n_{\text{qubits}}} \times 2^{n_{\text{qubits}}}$$
   matrix.
 * `E_err{i}`: **VQD error vs padded reference**, defined as `abs(E{i} - E_exact{i})`.
 
 Also always included (grid diagonalization):
 
-* `E_grid[i]`: Energies from exact diagonalization of the **physical grid Hamiltonian**, which is an
+* `E_grid{i}`: Energies from exact diagonalization of the **physical grid Hamiltonian**, which is an
   $$N \times N$$
   matrix.
 * `E_pad_err{i}`: **Padding mismatch**, defined as `abs(E_exact{i} - E_grid{i})`.
@@ -120,7 +120,8 @@ For `i = 0..k_states-2`:
 * `padding_leakage_max`: max leakage across the lowest `k_states` padded eigenvectors.
 * `padding_leakage_mean`: mean leakage across the lowest `k_states` padded eigenvectors.
 
-* `leakage`: Probability mass “leaking” **outside the original physical $N$-dimensional subspace** (i.e., outside the first $N$ basis states after embedding into $2^{n_{\text{qubits}}}$).
+Leakage here means probability mass **outside the original physical $N$-dimensional subspace**
+(i.e., outside the first $N$ basis states after embedding into $2^{n_{\text{qubits}}}$).
 
 ---
 
@@ -172,4 +173,3 @@ $$
 $$
 
 * **Why it matters:** Excitation gaps are often more physically relevant than absolute energies.
-
