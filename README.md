@@ -66,6 +66,7 @@ Each layer consists of:
 
 Each layer has **two parameters** $(\alpha_\ell,\beta_\ell)$, repeated for `reps = p` layers.
 
+-In practice, we implement these as products of PauliEvolutionGate over the Pauli terms of T and V.
 ---
 
 ## Why HVA can be efficient (what “efficient” means here)
@@ -100,20 +101,6 @@ $$
 
 If $[H_k,H]\neq 0$, tuning $\theta$ can move energy up or down — enabling variational optimization.
 
----
-
-## Symmetry note: parity for symmetric 1D potentials
-
-For symmetric potentials (HO, symmetric double well, centered ISW), $V(x)=V(-x)$, so parity $P$ is a symmetry:
-
-$$
-[H, P] = 0
-$$
-
-Eigenstates can be chosen with definite parity, and low-lying states typically alternate parity:
-$E_0$ even, $E_1$ odd, $E_2$ even, ...
-
-If an ansatz/initialization is restricted to one symmetry sector, it cannot represent states in the other. By default, this benchmark avoids enforcing a single-parity restriction unless explicitly running sector experiments.
 
 ---
 
