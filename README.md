@@ -69,7 +69,7 @@ Each run appends **one row** to `results/runs.parquet` with run settings, grid i
 * `N`: int. Number of grid points (physical Hilbert dimension).
 * `dx`: float. Grid spacing.
 * `n_qubits`: int. Smallest integer such that $2^{n_{\text{qubits}}} \ge N$.
-* `hilbert_dim`: int. Embedded qubit dimension, defined as $\texttt{hilbert_dim} = 2^{n_{\text{qubits}}}$.
+* `hilbert_dim`: int. Embedded qubit dimension, defined as $\texttt{hilbert\_dim} = 2^{n_{\text{qubits}}}$.
 * `x_min`, `x_max`: float. Min/max coordinates of the grid.
 * `hbar`: float. The reduced Planck constant $\hbar$ used in the kinetic term.
 * `m`: float. Mass $m$ used in the kinetic term.
@@ -92,12 +92,16 @@ Each run appends **one row** to `results/runs.parquet` with run settings, grid i
 For `i = 0..k_states-1` (ground state is `i=0`):
 
 * `E{i}`: **VQD estimated energy** for state `i`. (This is what you are benchmarking.)
-* `E_exact{i}`: **Exact eigenvalue of the padded qubit Hamiltonian** (diagonalization of the final  matrix).
+* `E_exact[i]`: Energies from exact diagonalization of the **padded qubit Hamiltonian**, which is a
+  $$2^{n_{\text{qubits}}} \times 2^{n_{\text{qubits}}}$$
+  matrix.
 * `E_err{i}`: **VQD error vs padded reference**, defined as `abs(E{i} - E_exact{i})`.
 
 Also always included (grid diagonalization):
 
-* `E_grid{i}`: **Grid energy** from diagonalizing the physical  Hamiltonian before padding.
+* `E_grid[i]`: Energies from exact diagonalization of the **physical grid Hamiltonian**, which is an
+  $$N \times N$$
+  matrix.
 * `E_pad_err{i}`: **Padding mismatch**, defined as `abs(E_exact{i} - E_grid{i})`.
 
 Analytic (only when a closed-form exists and required params exist; e.g., ISW, HO with `omega`):
@@ -116,7 +120,7 @@ For `i = 0..k_states-2`:
 * `padding_leakage_max`: max leakage across the lowest `k_states` padded eigenvectors.
 * `padding_leakage_mean`: mean leakage across the lowest `k_states` padded eigenvectors.
 
-(Leakage = probability weight outside the original physical -dimensional subspace when analyzing padded eigenvectors.)
+* `leakage`: Probability mass “leaking” **outside the original physical $N$-dimensional subspace** (i.e., outside the first $N$ basis states after embedding into $2^{n_{\text{qubits}}}$).
 
 ---
 
@@ -159,5 +163,10 @@ QC-Bench tracks errors across three layers: **continuous physics**, **grid discr
 ### 7) `gap_err_{i}` — Energy gap error
 
 * **Definition:**
+$$
+\texttt{gap_err}_i
+==================
 
+\left|,(E_{i+1}-E_i) - \left(E^{\text{exact}}*{i+1}-E^{\text{exact}}*{i}\right)\right|.
+$$
 * **Why it matters:** Excitation gaps are often more physically relevant than absolute energies.
