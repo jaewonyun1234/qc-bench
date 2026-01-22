@@ -165,8 +165,6 @@ QC-Bench tracks errors across three layers: **continuous physics**, **grid discr
 
 ### 7) `gap_err_{i}` — Energy gap error
 
-### 7) `gap_err_{i}` — Energy gap error
-
 **Definition:**
 
 $$
