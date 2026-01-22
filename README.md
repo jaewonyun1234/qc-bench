@@ -68,11 +68,11 @@ Each run appends **one row** to `results/runs.parquet` with run settings, grid i
 * `L`: float. Domain length.
 * `N`: int. Number of grid points (physical Hilbert dimension).
 * `dx`: float. Grid spacing.
-* `n_qubits`: Smallest integer such that $$2^{n_{\text{qubits}}} \ge N.$$
-* `hilbert_dim`: Embedded qubit dimension $\texttt{hilbert_dim} = 2^{n_{\text{qubits}}}$.
+* `n_qubits`: int. Smallest integer such that $2^{n_{\text{qubits}}} \ge N$.
+* `hilbert_dim`: int. Embedded qubit dimension, defined as $\texttt{hilbert_dim} = 2^{n_{\text{qubits}}}$.
 * `x_min`, `x_max`: float. Min/max coordinates of the grid.
-* `hbar`: float.  used in the kinetic term.
-* `m`: float. Mass  used in the kinetic term.
+* `hbar`: float. The reduced Planck constant $\hbar$ used in the kinetic term.
+* `m`: float. Mass $m$ used in the kinetic term.
 
 #### C) Circuit / operator cost
 
