@@ -163,12 +163,15 @@ QC-Bench tracks errors across three layers: **continuous physics**, **grid discr
 * **`E_err{i}` definition:** `abs(E{i} - E_exact{i})`
 * **Why it matters:** Captures optimization limits + sampling + noise + ansatz expressibility.
 
-### 7) `gap_err_{i}` — Energy gap error
+### 7) `gap_err_i` — Energy gap error
 
 **Definition:**
 
 $$
-\texttt{gap\_err}_i = \left| (E_{i+1} - E_i) - (E^{\text{exact}}_{i+1} - E^{\text{exact}}_{i}) \right|
+\texttt{gap\_err}_i
+=
+\left|\,(E_{i+1}-E_i) - \left(E^{\text{exact}}_{i+1}-E^{\text{exact}}_{i}\right)\right|.
 $$
 
 * **Why it matters:** Excitation gaps are often more physically relevant than absolute energies.
+
