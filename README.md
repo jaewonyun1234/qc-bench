@@ -132,7 +132,10 @@ QC-Bench tracks errors across three layers: **continuous physics**, **grid discr
 
 * **Definition:** Closed-form energy in continuous space (no discretization).
 * **Why it matters:** Physics “ground truth” (when it exists).
-* **Example (HO):** , so `E_analytic0` is .
+* **Example (Harmonic Oscillator):**
+  $$E_n = \hbar\omega\left(n+\frac{1}{2}\right);;\Rightarrow;;E_0=\frac{1}{2}\hbar\omega.$$
+  (So you need the parameter `omega` to define the analytic energies.)
+
 
 ### 2) `E_grid{i}` — Discretized grid energy
 
