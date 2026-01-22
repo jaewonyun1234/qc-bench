@@ -66,7 +66,7 @@ Each run appends **one row** to `results/runs.parquet` with run settings, grid i
 #### B) Grid / physical constants (from the discretized Hamiltonian)
 
 * `L`: float. Domain length.
-* `N`: int. Number of grid points (physical Hilbert dimension).
+* `N`: int. Number of interior grid points (physical Hilbert dimension).
 * `dx`: float. Grid spacing.
 * `n_qubits`: int. Smallest integer such that $2^{n_{\text{qubits}}} \ge N$.
 * `hilbert_dim`: int. Embedded qubit dimension, defined as $\mathrm{hilbert_dim} = 2^{n_{\text{qubits}}}$.
@@ -107,13 +107,13 @@ Also always included (grid diagonalization):
 Analytic (only when a closed-form exists and required params exist; e.g., ISW, HO with `omega`):
 
 * `E_analytic{i}`: Analytic (continuous-space) textbook energy level.
-* `E_analytic_err{i}`: Discretization error, defined as `abs(E_grid{i} - E_analytic{i})` (or `abs(E_exact{i} - E_analytic{i})` if grid energies were absent).
+* `E_analytic_err{i}`: Discretization error, defined as `abs(E_grid{i} - E_analytic{i})`.
 
 #### F) Gap error (energy spacing diagnostic)
 
 For `i = 0..k_states-2`:
 
-* `gap_err_{i}`: error in the energy gap between states `i` and `i+1`:
+* `gap_err_{i}`: error in the energy gap between states `i` and `i+1`.
 
 #### G) Padding leakage diagnostics (how “physical” the padded eigenvectors are)
 
